@@ -1,0 +1,5 @@
+SELECT * FROM orders WHERE status = 'В процессе';
+SELECT customer_id, book_id, book_num FROM orders ORDER BY customer_id, book_id;
+SELECT * FROM courier WHERE salary > 23000;
+SELECT orders.customer_id, sum(orders.book_num * book.cost) as all_book_cost FROM orders, book WHERE book.book_id = orders.book_id GROUP BY orders.customer_id ORDER BY orders.customer_id;
+INSERT INTO orders (customer_id, courier_id, book_id, book_num, delivery_address, order_date, delivery_date, delivery_cost, status) VALUES (1, 1, 1, 1, 'Красноярск, Киренского 3, 41', CURRENT_DATE, NULL, 20, 'Выполнено');

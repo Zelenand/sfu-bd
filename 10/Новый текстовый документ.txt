@@ -1,0 +1,60 @@
+CREATE TABLE customer(
+    customer_id SERIAL PRIMARY KEY,
+    name VARCHAR(50) NOT NULL,
+    phone_number VARCHAR(11) NOT NULL,
+    email VARCHAR(50) NOT NULL
+);
+
+CREATE TABLE courier(
+    courier_id SERIAL PRIMARY KEY,
+    name VARCHAR(50) NOT NULL,
+    phone_number VARCHAR(11) NOT NULL,
+    salary numeric(10, 2) NOT NULL
+);
+
+CREATE TABLE book(
+    book_id SERIAL PRIMARY KEY,
+    name VARCHAR(50) NOT NULL,
+    author VARCHAR(50) NOT NULL,
+    publisher VARCHAR(50) NOT NULL,
+    publication_year INTEGER NOT NULL,
+    cost numeric(10, 2) NOT NULL,
+    CHECK(extract(YEAR FROM NOW()) >= publication_year),
+    CHECK(cost > 0)
+);
+
+CREATE TABLE orders(
+    order_id SERIAL PRIMARY KEY,
+    customer_id INTEGER NOT NULL REFERENCES customer(customer_id) ON DELETE 
+CASCADE,
+    courier_id INTEGER NOT NULL REFERENCES courier(courier_id) ON DELETE 
+CASCADE,
+    book_id INTEGER NOT NULL REFERENCES book(book_id) ON DELETE 
+CASCADE,
+    book_num INTEGER NOT NULL,
+    delivery_address VARCHAR(50) NOT NULL,
+    order_date date DEFAULT CURRENT_DATE NOT NULL,
+    delivery_date date DEFAULT NULL,
+    delivery_cost numeric(10, 2) NOT NULL,
+    status VARCHAR(10) NOT NULL,
+    CHECK(book_num > 0),
+    CHECK(status IN ('В процессе', 'Выполнено'))
+);
+
+CREATE OR REPLACE FUNCTION check_status_valid_insert()
+RETURNS TRIGGER AS $$
+BEGIN
+    IF NEW.status = 'Выполнено' AND NEW.delivery_date IS NULL THEN
+        RAISE EXCEPTION 'Заказ не может быть помечен выполненным без указания даты доставки';
+    ELSIF (NOT (NEW.delivery_date IS NULL)) AND (NEW.status <> 'Выполнено') THEN 
+        RAISE EXCEPTION 'Заказ должен быть помечен выполненным при указания даты доставки';
+    END IF;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+
+CREATE TRIGGER check_status_valid_insert_trigger
+BEFORE INSERT ON orders
+FOR EACH ROW
+EXECUTE PROCEDURE check_status_valid_insert();
